@@ -7,21 +7,31 @@ class itemspider(scrapy.Spider):
     name = 'search'
 
     def start_requests(self):
-        url = 'https://search.jd.com/Search?keyword='
+        urls = {
+            'jd': 'https://search.jd.com/Search?keyword={}&enc=utf-8&wq={}'
+            # 'dd': 'http://search.dangdang.com/?key={}&act=input'
+        }
         keyword = getattr(self, 'keyword', None)
         if keyword is not None:
-            url= url + keyword + '&enc=utf-8&wq=' + keyword
-        self.log('----------------'+url)
-        yield scrapy.Request(url, self.parse)
+            for key, value in urls.items():
+                if key == 'jd':
+                    url = value.format(keyword, keyword)
+                    yield scrapy.Request(url, self.parsejd)
+                elif key == 'dd':
+                    url = value.format(keyword)
+                    yield scrapy.Request(url, self.parsedd)
 
-    def parse(self, response):
+    def parsejd(self, response):
         skus = response.css('li.gl-item')
         # self.log('----------------'+response.body)
         for sku in skus:
             isSelf = sku.css('.p-icons i::text').extract_first() == '自营'
             if isSelf:
-                title = sku.css('.p-name font::text').extract_first() + sku.css('.p-name em::text').extract_first()
+                skuid = sku.css('.gl-item::attr(data-sku)').extract_first()
+                author = sku.css('.p-bi-name a::text').extract_first()
+                title = ''.join(sku.css('.p-name em *::text').extract())  #sku.css('.p-name font::text').extract_first() + sku.css('.p-name em::text').extract_first()
                 price = sku.css('.p-price em::text').extract_first() + sku.css('.p-price i::text').extract_first()
+                publisher = sku.css('.p-bi-store a::text').extract_first()
                 link = sku.css('.p-name a::attr(href)').extract_first()
                 img = sku.css('.p-img img::attr(source-data-lazy-img)').extract_first()
                 self.log('----------------'+title+price+link)
@@ -30,18 +40,24 @@ class itemspider(scrapy.Spider):
                     f.write(title+'\t'+price+'\t'+link+'\n')
                     f.close()
 
-        #     tags = ','.join(tags)
-        #     fileName = '%s-语录.txt' % tags
-        #     with open(fileName, "a+") as f:
-        #         f.write(text)
-        #         f.write('\n')
-        #         f.write('标签：' + tags)
-        #         f.write('\n-------\n')
-        #         f.close()
-        # next_page = response.css('li.next a::attr(href)').extract_first()
-        # if next_page is not None:
-        #     next_page = response.urljoin(next_page)
-        #     yield scrapy.Request(next_page, callback=self.parse)
+    def parsedd(self, response):
+        skus = response.css('li.gl-item')
+        # self.log('----------------'+response.body)
+        for sku in skus:
+            isSelf = sku.css('.p-icons i::text').extract_first() == '自营'
+            if isSelf:
+                skuid = sku.css('.gl-item::attr(data-sku)').extract_first()
+                author = sku.css('.p-bi-name a::text').extract_first()
+                title = sku.css('.p-name font::text').extract_first() + sku.css('.p-name em::text').extract_first()
+                price = sku.css('.p-price em::text').extract_first() + sku.css('.p-price i::text').extract_first()
+                publisher = sku.css('.p-bi-store a::text').extract_first()
+                link = sku.css('.p-name a::attr(href)').extract_first()
+                img = sku.css('.p-img img::attr(source-data-lazy-img)').extract_first()
+                self.log('----------------'+title+price+link)
+            
+                with open('test.txt', "a+") as f:
+                    f.write(title+'\t'+price+'\t'+link+'\n')
+                    f.close()
 
 
         # item = BookieItem()
