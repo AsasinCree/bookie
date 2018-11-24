@@ -1,3 +1,5 @@
 test.txt
 
 /bookie/spiders/__pycache__
+
+/bookie/__pycache__

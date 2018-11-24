@@ -9,7 +9,7 @@ class itemspider(scrapy.Spider):
     def start_requests(self):
         urls = {
             'jd': 'https://search.jd.com/Search?keyword={}&enc=utf-8&wq={}'
-            # 'dd': 'http://search.dangdang.com/?key={}&act=input'
+            #'dd': 'http://search.dangdang.com/?key={}&act=input'
         }
         keyword = getattr(self, 'keyword', None)
         if keyword is not None:
@@ -34,29 +34,31 @@ class itemspider(scrapy.Spider):
                 publisher = sku.css('.p-bi-store a::text').extract_first()
                 link = sku.css('.p-name a::attr(href)').extract_first()
                 img = sku.css('.p-img img::attr(source-data-lazy-img)').extract_first()
+                isEbook = False
                 self.log('----------------'+title+price+link)
             
-                with open('test.txt', "a+") as f:
-                    f.write(title+'\t'+price+'\t'+link+'\n')
+                with open('test.txt', "a+",encoding='utf-8') as f:
+                    f.write(skuid + '\t'+author + '\t'+title+'\t'+(price if price is not None else '')+'\t'+(publisher if publisher is not None else '')+'\t'+link+'\t'+img+'\t'+('Ebook' if isEbook else 'notEbook')+'\n')
                     f.close()
 
     def parsedd(self, response):
-        skus = response.css('li.gl-item')
+        skus = response.css('.bigimg li')
         # self.log('----------------'+response.body)
         for sku in skus:
-            isSelf = sku.css('.p-icons i::text').extract_first() == '自营'
+            isSelf = sku.css('.lable_label').extract_first() is not None # '自营'  
             if isSelf:
-                skuid = sku.css('.gl-item::attr(data-sku)').extract_first()
-                author = sku.css('.p-bi-name a::text').extract_first()
-                title = sku.css('.p-name font::text').extract_first() + sku.css('.p-name em::text').extract_first()
-                price = sku.css('.p-price em::text').extract_first() + sku.css('.p-price i::text').extract_first()
-                publisher = sku.css('.p-bi-store a::text').extract_first()
-                link = sku.css('.p-name a::attr(href)').extract_first()
-                img = sku.css('.p-img img::attr(source-data-lazy-img)').extract_first()
+                skuid = sku.css('li::attr(id)').extract_first()
+                author = sku.css('.search_book_author a::attr(title)').extract_first()
+                title = sku.css('.pic::attr(title)').extract_first()
+                price = sku.css('.search_now_price::text').extract_first()
+                publisher = sku.css('.search_book_author span:last-of-type a::attr(title)').extract_first()
+                link = sku.css('.pic::attr(href)').extract_first()
+                img = sku.css('.pic img::attr(data-original)').extract_first()
+                isEbook = sku.css('.ebook_buy').extract_first() is not None # '电子书' 
                 self.log('----------------'+title+price+link)
             
-                with open('test.txt', "a+") as f:
-                    f.write(title+'\t'+price+'\t'+link+'\n')
+                with open('test.txt', "a+",encoding='utf-8') as f:
+                    f.write(skuid + '\t'+author + '\t'+title+'\t'+(price if price is not None else '')+'\t'+(publisher if publisher is not None else '')+'\t'+link+'\t'+img+'\t'+('Ebook' if isEbook else 'notEbook')+'\n')
                     f.close()
 
 
